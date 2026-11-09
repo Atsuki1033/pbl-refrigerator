@@ -1,0 +1,613 @@
+/* ===== テーマ変数 ===== */
+:root {
+    --bg: #f3f6f4;
+    --surface: #ffffff;
+    --surface-2: #eaf0ed;
+    --ink: #14211b;
+    --ink-soft: #5b6b63;
+    --line: #dbe4df;
+    --accent: #1c8f62;
+    --accent-ink: #ffffff;
+    --accent-soft: #dff3e9;
+    --danger: #c8412f;
+    --danger-soft: #fbe6e2;
+    --warn: #a86a00;
+    --warn-soft: #fdf0d4;
+    --shadow: 0 1px 2px rgba(20, 33, 27, .06), 0 8px 24px rgba(20, 33, 27, .06);
+    --radius: 16px;
+    --radius-sm: 10px;
+    color-scheme: light;
+}
+
+:root:not([data-theme="light"]) {
+    --_dark: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0e1411;
+        --surface: #161e1a;
+        --surface-2: #1d2823;
+        --ink: #e7f0eb;
+        --ink-soft: #92a39b;
+        --line: #26332d;
+        --accent: #3ec58b;
+        --accent-ink: #06150e;
+        --accent-soft: #163326;
+        --danger: #ff7a68;
+        --danger-soft: #3a1b17;
+        --warn: #f0b64d;
+        --warn-soft: #36290f;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+        color-scheme: dark;
+    }
+}
+
+:root[data-theme="dark"] {
+    --bg: #0e1411;
+    --surface: #161e1a;
+    --surface-2: #1d2823;
+    --ink: #e7f0eb;
+    --ink-soft: #92a39b;
+    --line: #26332d;
+    --accent: #3ec58b;
+    --accent-ink: #06150e;
+    --accent-soft: #163326;
+    --danger: #ff7a68;
+    --danger-soft: #3a1b17;
+    --warn: #f0b64d;
+    --warn-soft: #36290f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+}
+
+/* ===== ベース ===== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 32px 20px 64px;
+    font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .25s, color .25s;
+}
+
+.container {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+/* ===== ヘッダー ===== */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 4.5vw, 1.9rem);
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-align: left;
+}
+
+h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.theme-toggle {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+}
+
+/* ===== 入力フォーム ===== */
+.form-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow);
+}
+
+.form-box form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.upload-title {
+    margin: 28px 0 12px;
+    font-size: 1rem;
+}
+
+.upload-form {
+    align-items: center;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field.wide {
+    grid-column: 1 / -1;
+}
+
+.field-row {
+    display: flex;
+    gap: 8px;
+}
+
+.field-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+label {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+input,
+select {
+    width: 100%;
+    margin: 0;
+    padding: 11px 12px;
+    font: inherit;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    transition: border-color .15s, background-color .15s;
+}
+
+select {
+    width: auto;
+    min-width: 96px;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+}
+
+/* ===== ボタン ===== */
+button {
+    font: inherit;
+    font-weight: 700;
+    padding: 11px 20px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    background: var(--accent);
+    color: var(--accent-ink);
+    transition: transform .1s, opacity .15s, background-color .15s;
+}
+
+button:hover {
+    opacity: .88;
+}
+
+button:active {
+    transform: scale(.97);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.actions a {
+    text-decoration: none;
+}
+
+.actions button,
+.actions a button {
+    width: 100%;
+}
+
+.actions > * {
+    flex: 1 1 200px;
+}
+
+.btn-secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+/* ===== 食材リスト ===== */
+.section-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0 4px 12px;
+}
+
+.ingredient {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+}
+
+.ingredient-main {
+    min-width: 0;
+}
+
+.ingredient h2 {
+    overflow-wrap: anywhere;
+}
+
+.ingredient p {
+    margin: 2px 0 0;
+    color: var(--ink-soft);
+    font-size: .92rem;
+}
+
+.ingredient .amount {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.expiry-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 10px;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.expiry-badge.soon {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
+.expiry-badge.expired {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.ingredient form {
+    flex: none;
+}
+
+.delete-button {
+    background: var(--danger-soft);
+    color: var(--danger);
+    padding: 9px 16px;
+}
+
+.empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-soft);
+    border: 2px dashed var(--line);
+    border-radius: var(--radius);
+}
+
+/* ===== レシピページ ===== */
+.recipe-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 32px 28px;
+    box-shadow: var(--shadow);
+}
+
+.recipe-icon {
+    text-align: center;
+    font-size: 2.2rem;
+    letter-spacing: .3em;
+    margin-bottom: 8px;
+}
+
+.recipe-card h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.recipe-content {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.9;
+    background: var(--surface-2);
+    padding: 22px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 32px;
+}
+
+.rating {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rating button {
+    background: var(--surface-2);
+    color: var(--ink);
+    padding: 10px 14px;
+    font-size: .95rem;
+}
+
+.rating button:hover {
+    background: var(--accent-soft);
+    opacity: 1;
+}
+
+.recipe-card .back {
+    display: block;
+    margin-top: 28px;
+    text-decoration: none;
+}
+
+.recipe-card .back button {
+    width: 100%;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 560px) {
+    body {
+        padding: 20px 14px 48px;
+    }
+
+    .form-box {
+        padding: 18px;
+    }
+
+    .form-box form {
+        grid-template-columns: 1fr;
+    }
+
+    .ingredient {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ingredient form button {
+        width: 100%;
+    }
+
+    .recipe-card {
+        padding: 24px 18px;
+    }
+
+    .rating button {
+        flex: 1 1 28%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+    }
+}
+
+/* ===== 追加機能：クイック入力・サマリー・絞り込み・読み込み表示 ===== */
+.quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chip {
+    padding: 6px 14px;
+    font-size: .85rem;
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+}
+
+.chip:hover {
+    background: var(--accent-soft);
+    opacity: 1;
+}
+
+.chip.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px 8px;
+    text-align: center;
+    box-shadow: var(--shadow);
+}
+
+.stat b {
+    display: block;
+    font-size: 1.6rem;
+    line-height: 1.2;
+}
+
+.stat span {
+    font-size: .8rem;
+    color: var(--ink-soft);
+}
+
+.stat.soon b { color: var(--warn); }
+.stat.expired b { color: var(--danger); }
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.toolbar input[type="search"] {
+    flex: 1 1 200px;
+}
+
+.toolbar select {
+    flex: 0 0 auto;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.no-match {
+    display: none;
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--ink-soft);
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.loading {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(4px);
+    font-weight: 700;
+}
+
+.loading.show {
+    display: flex;
+}
+
+.spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .9s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 560px) {
+    .toolbar select {
+        flex: 1 1 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner { animation-duration: 3s; }
+}
+
+/* ===== 通知メッセージ ===== */
+.flash-area {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.flash {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    font-size: .95rem;
+    line-height: 1.5;
+}
+
+.flash-text {
+    flex: 1;
+}
+
+.flash.success {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+}
+
+.flash.warning {
+    background: var(--warn-soft);
+    border-color: var(--warn);
+}
+
+.flash.error {
+    background: var(--danger-soft);
+    border-color: var(--danger);
+}
+
+.flash-close {
+    background: none;
+    border: 0;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0 4px;
+    box-shadow: none;
+    width: auto;
+}

@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>レシピ履歴</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem("theme");
+                if (theme) {
+                    document.documentElement.setAttribute("data-theme", theme);
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <style>
+        .history-item {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            scroll-margin-top: 16px;
+        }
+
+        .history-item:target,
+        .history-item.open {
+            border-color: currentColor;
+        }
+
+        .history-head,
+        .history-head:hover,
+        .history-head:active,
+        .history-head:focus {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            padding: 16px 20px;
+            border: 0;
+            border-radius: 0;
+            background: none;
+            box-shadow: none;
+            transform: none;
+            filter: none;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .history-head:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: -4px;
+        }
+
+        .history-head-main {
+            min-width: 0;
+        }
+
+        .history-title {
+            display: block;
+            font-size: 1.05rem;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .history-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 14px;
+            margin-top: 6px;
+            color: var(--ink-soft);
+            font-size: 0.85rem;
+        }
+
+        .history-chevron {
+            flex: none;
+            font-size: 1.1rem;
+            color: var(--ink-soft);
+            transition: transform 0.3s ease;
+        }
+
+        .history-item.open .history-chevron {
+            transform: rotate(180deg);
+        }
+
+        .history-panel {
+            display: grid;
+            grid-template-rows: 0fr;
+            visibility: hidden;
+            transition: grid-template-rows 0.3s ease, visibility 0s linear 0.3s;
+        }
+
+        .history-item.open .history-panel {
+            grid-template-rows: 1fr;
+            visibility: visible;
+            transition: grid-template-rows 0.3s ease, visibility 0s;
+        }
+
+        .history-panel-inner {
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .history-panel-body {
+            padding: 0 20px 20px;
+            border-top: 1px solid var(--line);
+        }
+
+        .history-content {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            color: var(--ink-soft);
+            margin: 16px 0;
+        }
+
+        .history-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .history-actions a {
+            display: block;
+            text-decoration: none;
+        }
+
+        .history-actions button {
+            width: 100%;
+        }
+
+        .use-form {
+            margin-top: 12px;
+        }
+
+        .use-done {
+            text-align: center;
+            color: var(--ok);
+            font-weight: 700;
+            margin: 12px 0;
+            font-size: 0.9rem;
+        }
+
+        .history-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            align-items: center;
+            margin: 16px 0;
+            padding: 14px 16px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+        }
+
+        .history-filter label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--ink-soft);
+        }
+
+        .history-filter select {
+            width: auto;
+            max-width: 100%;
+            font: inherit;
+        }
+
+        .history-reset,
+        .history-reset:visited {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+            padding: 6px 14px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--surface);
+            color: var(--ink-soft);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            box-shadow: var(--shadow);
+            transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+
+        .history-reset .history-reset-icon {
+            display: inline-block;
+            transition: transform 0.4s ease;
+        }
+
+        .history-reset:hover,
+        .history-reset:focus-visible {
+            border-color: currentColor;
+            color: inherit;
+            transform: translateY(-1px);
+        }
+
+        .history-reset:hover .history-reset-icon,
+        .history-reset:focus-visible .history-reset-icon {
+            transform: rotate(-360deg);
+        }
+
+        .history-reset:active {
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .history-reset,
+            .history-reset .history-reset-icon {
+                transition: none;
+            }
+        }
+
+        .history-count {
+            color: var(--ink-soft);
+            font-size: 0.85rem;
+            margin: 0 0 12px;
+        }
+
+        .history-ingredients {
+            display: block;
+            margin-top: 6px;
+            color: var(--ink-soft);
+            font-size: 0.85rem;
+            overflow-wrap: anywhere;
+        }
+
+        .page-actions {
+            margin-top: 24px;
+        }
+
+        .page-actions a {
+            display: block;
+            text-decoration: none;
+        }
+
+        .page-actions button {
+            width: 100%;
+        }
+
+        .rating-label {
+            font-size: 0.9rem;
+            color: var(--ink-soft);
+            margin: 16px 0 8px;
+        }
+
+        .star-form {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .star-btn,
+        .star-btn:hover,
+        .star-btn:active,
+        .star-btn:focus {
+            width: auto;
+            padding: 2px 6px;
+            border: 0;
+            border-radius: 8px;
+            background: none;
+            box-shadow: none;
+            transform: none;
+            filter: none;
+            color: var(--ink-soft);
+            font-size: 2rem;
+            line-height: 1.2;
+            cursor: pointer;
+        }
+
+        .star-btn.on,
+        .star-btn.on:hover,
+        .star-btn.on:active,
+        .star-btn.on:focus {
+            color: #f5b301;
+        }
+
+        .star-btn:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .history-panel,
+            .history-item.open .history-panel,
+            .history-chevron {
+                transition: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="topbar">
+            <h1>📖 レシピ履歴</h1>
+            <button type="button" class="theme-toggle" id="theme-toggle"
+                    aria-label="ライト/ダークモードを切り替え">🌓</button>
+        </div>
+
+        <p>レシピ名をタップすると、材料と作り方を開けます。評価はAIの次のレシピ提案に使われます。</p>
+
+        <form method="get" action="{{ url_for('history') }}" class="history-filter">
+            <label>
+                食材
+                <select name="ingredient" onchange="this.form.submit()">
+                    <option value="">すべて</option>
+                    {% for name, count in ingredient_options %}
+                    <option value="{{ name }}" {% if name == selected_ingredient %}selected{% endif %}>
+                        {{ name }}（{{ count }}）
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                並べ替え
+                <select name="sort" onchange="this.form.submit()">
+                    <option value="new"    {% if sort == 'new' %}selected{% endif %}>新しい順</option>
+                    <option value="rating" {% if sort == 'rating' %}selected{% endif %}>評価が高い順</option>
+                    <option value="fridge" {% if sort == 'fridge' %}selected{% endif %}>冷蔵庫の食材を多く使う順</option>
+                </select>
+            </label>
+
+            {% if selected_ingredient or sort != 'new' %}
+            <a href="{{ url_for('history') }}" class="history-reset">
+                <span class="history-reset-icon" aria-hidden="true">↺</span>
+                絞り込みをリセット
+            </a>
+            {% endif %}
+        </form>
+
+        {% if selected_ingredient %}
+        <p class="history-count">「{{ selected_ingredient }}」を使ったレシピ：{{ recipes|length }}件</p>
+        {% endif %}
+
+        {% for recipe in recipes %}
+        <div class="history-item" id="recipe-{{ recipe.id }}">
+
+            <button type="button" class="history-head"
+                    id="head-{{ recipe.id }}"
+                    aria-expanded="false"
+                    aria-controls="panel-{{ recipe.id }}">
+                <span class="history-head-main">
+                    <span class="history-title">{{ recipe.title }}</span>
+                    <span class="history-meta">
+                        <span>📅 {{ recipe.created_at }}</span>
+                        <span class="meta-rating">
+                            {% if recipe.rating %}
+                                評価：{{ "⭐" * recipe.rating }}
+                            {% else %}
+                                未評価
+                            {% endif %}
+                        </span>
+                    </span>
+                    {% if recipe.ingredients %}
+                    <span class="history-ingredients">
+                        🥬 {{ recipe.ingredients | join('、') }}
+                        {% if recipe.fridge_match %}（冷蔵庫に{{ recipe.fridge_match }}品あり）{% endif %}
+                    </span>
+                    {% endif %}
+                </span>
+                <span class="history-chevron" aria-hidden="true">▼</span>
+            </button>
+
+            <div class="history-panel" id="panel-{{ recipe.id }}"
+                 role="region" aria-labelledby="head-{{ recipe.id }}">
+                <div class="history-panel-inner">
+                    <div class="history-panel-body">
+
+                        <div class="history-content" id="content-{{ recipe.id }}">{{ recipe.body }}</div>
+
+                        <!-- ===== 食材消費ボタン ===== -->
+                        <div class="use-section" id="use-section-{{ recipe.id }}">
+                            <form method="POST" action="/use" class="use-form" data-recipe-id="{{ recipe.id }}">
+                                <button type="submit" class="btn-secondary">🍽️ 作った！（食材を使う）</button>
+                            </form>
+                            <p class="use-done" id="use-done-{{ recipe.id }}" style="display: none;">✅ 冷蔵庫から食材を減らしました</p>
+                        </div>
+
+                        <p class="rating-label">
+                            {% if recipe.rating %}
+                                評価：{{ "⭐" * recipe.rating }}（押し直すと変更できます）
+                            {% else %}
+                                まだ評価されていません
+                            {% endif %}
+                        </p>
+
+                        <form method="POST"
+                              action="{{ url_for('feedback', recipe_id=recipe.id) }}"
+                              class="star-form">
+                            <input type="hidden" name="next" value="history">
+                            <input type="hidden" name="ingredient" value="{{ selected_ingredient }}">
+                            <input type="hidden" name="sort" value="{{ sort }}">
+                            {% for n in range(1, 6) %}
+                            <button type="submit" name="rating" value="{{ n }}"
+                                    aria-label="{{ n }}点"
+                                    class="star-btn{{ ' on' if recipe.rating and recipe.rating >= n else '' }}">{{ '★' if recipe.rating and recipe.rating >= n else '☆' }}</button>
+                            {% endfor %}
+                        </form>
+
+                        <div class="history-actions">
+                            <a href="{{ url_for('history_detail', recipe_id=recipe.id) }}">
+                                <button type="button">レシピを開く</button>
+                            </a>
+
+                            <form method="POST"
+                                  action="{{ url_for('delete_recipe_route', recipe_id=recipe.id) }}"
+                                  data-confirm="{{ recipe.title }}">
+                                <input type="hidden" name="ingredient" value="{{ selected_ingredient }}">
+                                <input type="hidden" name="sort" value="{{ sort }}">
+                                <button type="submit" class="delete-button">削除</button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% else %}
+        <div class="empty">
+            {% if selected_ingredient %}
+                「{{ selected_ingredient }}」を使ったレシピはありません。
+            {% else %}
+                まだ保存されたレシピがありません。<br>
+                冷蔵庫の画面でレシピを生成し、「履歴に保存する」を押してみましょう。
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="page-actions">
+            <a href="/">
+                <button type="button" class="btn-secondary">
+                    🥕 冷蔵庫に戻る
+                </button>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var btn = document.getElementById("theme-toggle");
+
+            btn.addEventListener("click", function () {
+                var current = root.getAttribute("data-theme") ||
+                    (window.matchMedia("(prefers-color-scheme: dark)").matches
+                        ? "dark" : "light");
+
+                var next = current === "dark" ? "light" : "dark";
+                root.setAttribute("data-theme", next);
+
+                try {
+                    localStorage.setItem("theme", next);
+                } catch (e) {}
+            });
+        })();
+
+        // アコーディオンの開閉
+        (function () {
+            var items = document.querySelectorAll(".history-item");
+
+            function setOpen(item, open) {
+                item.classList.toggle("open", open);
+                item.querySelector(".history-head")
+                    .setAttribute("aria-expanded", open ? "true" : "false");
+            }
+
+            items.forEach(function (item) {
+                item.querySelector(".history-head").addEventListener("click", function () {
+                    setOpen(item, !item.classList.contains("open"));
+                });
+            });
+
+            function openFromHash() {
+                if (!location.hash) return;
+
+                var target = document.getElementById(location.hash.slice(1));
+
+                if (target && target.classList.contains("history-item")) {
+                    setOpen(target, true);
+                }
+            }
+
+            openFromHash();
+            window.addEventListener("hashchange", openFromHash);
+        })();
+
+        // 「作った！（食材を使う）」ボタンの処理
+        document.querySelectorAll(".use-form").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                if (!confirm("この料理で使った食材を冷蔵庫から減らしますか？")) return;
+
+                var recipeId = form.dataset.recipeId;
+                var contentElem = document.getElementById("content-" + recipeId);
+                var text = contentElem ? contentElem.innerText : "";
+
+                // 本文から箇条書きの材料行（例: - 豚肉 150g または - 豚肉：150g）を抽出
+                var formData = new FormData();
+                var lines = text.split("\n");
+                var inIngredients = false;
+
+                // 分数表記（½ など）を半角の「 1/2」に直してから、全角→半角に正規化する
+                var VULGAR = { "½": " 1/2", "⅓": " 1/3", "⅔": " 2/3", "¼": " 1/4", "¾": " 3/4" };
+
+                function normalizeLine(line) {
+                    Object.keys(VULGAR).forEach(function (k) {
+                        line = line.split(k).join(VULGAR[k]);
+                    });
+                    return line.normalize("NFKC").replace(/\u2044/g, "/");
+                }
+
+                // 分量：整数・小数・分数（1/2）・帯分数（1 1/2、1と1/2）に対応
+                var ING_RE = /^[\s*\->・]*([^\d：:\s]+)[\s：:]*(\d+(?:\.\d+)?(?:\s*(?:と|\+|\s)\s*\d+\s*\/\s*\d+|\s*\/\s*\d+)?)\s*([^\d\s]*)/;
+
+                lines.forEach(function (rawLine) {
+                    var line = normalizeLine(rawLine);
+
+                    if (line.indexOf("材料") !== -1) {
+                        inIngredients = true;
+                        return;
+                    }
+                    if (line.indexOf("作り方") !== -1) {
+                        inIngredients = false;
+                        return;
+                    }
+
+                    if (inIngredients) {
+                        var m = line.match(ING_RE);
+                        if (m) {
+                            formData.append("name", m[1].trim());
+                            formData.append("quantity", m[2].trim());
+                            formData.append("unit", m[3].trim() || "個");
+                        }
+                    }
+                });
+
+                var btn = form.querySelector("button");
+                btn.disabled = true;
+
+                fetch(form.action, {
+                    method: "POST",
+                    headers: { "X-Requested-With": "fetch" },
+                    body: formData
+                }).then(function (res) {
+                    if (!res.ok) throw new Error("failed");
+                    form.style.display = "none";
+                    document.getElementById("use-done-" + recipeId).style.display = "block";
+                }).catch(function () {
+                    btn.disabled = false;
+                    alert("食材の更新に失敗しました。");
+                });
+            });
+        });
+
+        // 星評価：ページを再読み込みせず、スクロールもしないで評価を保存する
+        document.querySelectorAll(".star-form").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                var clicked = e.submitter;
+                if (!clicked) return;
+
+                var rating = parseInt(clicked.value, 10);
+                var data = new FormData(form);
+                data.set("rating", rating);
+
+                var buttons = form.querySelectorAll(".star-btn");
+                buttons.forEach(function (b) { b.disabled = true; });
+
+                fetch(form.action, {
+                    method: "POST",
+                    headers: { "X-Requested-With": "fetch" },
+                    body: data
+                }).then(function (res) {
+                    if (!res.ok) throw new Error("failed");
+                    return res.json();
+                }).then(function () {
+                    var stars = "⭐".repeat(rating);
+
+                    // 星の見た目を更新
+                    buttons.forEach(function (b, i) {
+                        var on = (i + 1) <= rating;
+                        b.classList.toggle("on", on);
+                        b.textContent = on ? "★" : "☆";
+                    });
+
+                    // 「評価：…」のラベルを更新
+                    var item = form.closest(".history-item");
+                    var label = item.querySelector(".rating-label");
+                    var meta = item.querySelector(".meta-rating");
+
+                    if (label) label.textContent = "評価：" + stars + "（押し直すと変更できます）";
+                    if (meta) meta.textContent = "評価：" + stars;
+
+                    // スクロール位置の復元用に保存された値を消しておく（ページは再読み込みされないため）
+                    try { sessionStorage.removeItem("pbl_scroll_restore"); } catch (err) {}
+                }).catch(function () {
+                    alert("評価を保存できませんでした。");
+                }).then(function () {
+                    buttons.forEach(function (b) { b.disabled = false; });
+                });
+            });
+        });
+
+        // 削除の確認
+        document.querySelectorAll("form[data-confirm]").forEach(function (f) {
+            f.addEventListener("submit", function (e) {
+                if (!confirm("「" + f.dataset.confirm + "」を履歴から削除しますか？\n評価も一緒に削除されます。")) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>冷蔵庫の食材</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    {% if not has_api_key %}
+    <!-- ===== APIキー入力モーダル用CSS ===== -->
+    <style>
+        .api-modal {
+            --m-card: #ffffff;
+            --m-text: #2b2623;
+            --m-sub: #6f6760;
+            --m-border: #e6dfd8;
+            --m-accent: #e8742c;
+            --m-accent-text: #ffffff;
+            --m-field: #faf7f4;
+            --m-error: #c0392b;
+
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(20, 16, 12, 0.55);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            animation: api-overlay-in 0.25s ease-out both;
+        }
+
+        :root[data-theme="dark"] .api-modal {
+            --m-card: #2a2521;
+            --m-text: #f3ede7;
+            --m-sub: #b3a9a0;
+            --m-border: #3f3832;
+            --m-accent: #f08a46;
+            --m-accent-text: #1f1a16;
+            --m-field: #211d1a;
+            --m-error: #ff8a7a;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) .api-modal {
+                --m-card: #2a2521;
+                --m-text: #f3ede7;
+                --m-sub: #b3a9a0;
+                --m-border: #3f3832;
+                --m-accent: #f08a46;
+                --m-accent-text: #1f1a16;
+                --m-field: #211d1a;
+                --m-error: #ff8a7a;
+            }
+        }
+
+        .api-modal-card {
+            width: 100%;
+            max-width: 420px;
+            max-height: 100%;
+            overflow-y: auto;
+            padding: 28px 24px 22px;
+            border-radius: 20px;
+            background: var(--m-card);
+            color: var(--m-text);
+            border: 1px solid var(--m-border);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+            font-family: "Zen Maru Gothic", sans-serif;
+            animation: api-card-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.15) 0.05s both;
+        }
+
+        .api-modal-icon {
+            font-size: 32px;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .api-modal-card h2 {
+            margin: 0 0 8px;
+            font-size: 20px;
+            line-height: 1.4;
+            color: var(--m-text);
+        }
+
+        .api-modal-card p {
+            margin: 0 0 18px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--m-sub);
+        }
+
+        .api-modal-card label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--m-text);
+        }
+
+        .api-key-field {
+            position: relative;
+        }
+
+        .api-key-field input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 64px 12px 14px;
+            border: 1.5px solid var(--m-border);
+            border-radius: 12px;
+            background: var(--m-field);
+            color: var(--m-text);
+            font-size: 15px;
+            font-family: inherit;
+        }
+
+        .api-key-field input:focus {
+            outline: none;
+            border-color: var(--m-accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent) 25%, transparent);
+        }
+
+        .api-key-toggle {
+            position: absolute;
+            top: 50%;
+            right: 6px;
+            transform: translateY(-50%);
+            padding: 6px 10px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--m-sub);
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .api-key-toggle:hover {
+            color: var(--m-text);
+        }
+
+        .api-modal-error {
+            margin: 8px 0 0;
+            font-size: 13px;
+            color: var(--m-error);
+        }
+
+        .api-modal-card .api-modal-help {
+            margin: 10px 0 0;
+            font-size: 12px;
+        }
+
+        .api-modal-card .api-modal-help a {
+            color: var(--m-accent);
+        }
+
+        .api-modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 18px;
+        }
+
+        .api-modal-actions button {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .api-modal-actions .api-save {
+            border: none;
+            background: var(--m-accent);
+            color: var(--m-accent-text);
+        }
+
+        .api-modal-actions .api-save:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .api-modal-actions .api-later {
+            border: none;
+            background: transparent;
+            color: var(--m-sub);
+            font-weight: 400;
+            font-size: 13px;
+        }
+
+        body.api-modal-open {
+            overflow: hidden;
+        }
+
+        @keyframes api-overlay-in {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes api-card-in {
+            from { opacity: 0; transform: translateY(16px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .api-modal,
+            .api-modal-card {
+                animation: none;
+            }
+        }
+    </style>
+    {% endif %}
+
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("theme");
+                if (t) document.documentElement.setAttribute("data-theme", t);
+            } catch (e) { }
+        })();
+    </script>
+</head>
+
+<body{% if not has_api_key %} class="api-modal-open"{% endif %}>
+
+    <div class="container">
+
+        <div class="topbar">
+            <h1>🥕 冷蔵庫の食材管理</h1>
+            <button type="button" class="theme-toggle" id="theme-toggle"
+                aria-label="ライト/ダークモードを切り替え">🌓</button>
+        </div>
+
+        <!-- ===== メッセージ表示（画像読み取り結果など） ===== -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-area" role="status" aria-live="polite">
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">
+                <span class="flash-icon">{% if category == 'success' %}✅{% elif category == 'warning' %}⚠️{% else %}❌{% endif %}</span>
+                <span class="flash-text">{{ message }}</span>
+                <button type="button" class="flash-close" aria-label="閉じる">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="form-box">
+
+            <form method="POST">
+
+                <div class="field wide">
+                    <label for="name">食材名</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="field">
+                    <label for="quantity">数量</label>
+                    <div class="field-row">
+                        <input type="number" id="quantity" name="quantity" min="1" required>
+                        <select name="unit" aria-label="単位">
+                            <option value="g">g</option>
+                            <option value="kg">kg</option>
+                            <option value="個">個</option>
+                            <option value="本">本</option>
+                            <option value="袋">袋</option>
+                            <option value="パック">パック</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="expiry_date">賞味期限</label>
+                    <div class="field-row">
+                         <input type="date" id="expiry_date" name="expiry_date" max="9999-12-31" required>
+                    </div>
+                    <div class="quick" aria-label="期限のクイック入力">
+                        <button type="button" class="chip" data-days="3">3日後</button>
+                        <button type="button" class="chip" data-days="7">1週間後</button>
+                        <button type="button" class="chip" data-days="14">2週間後</button>
+                        <button type="button" class="chip" data-days="30">1か月後</button>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit">食材を登録</button>
+
+                    <a href="/chat">
+                        <button type="button" class="btn-secondary">
+                            💬 エナに相談する
+                        </button>
+                    </a>
+
+                    <a href="/recipe">
+                        <button type="button" class="btn-secondary">
+                            🍳 おすすめレシピを見る
+                        </button>
+                    </a>
+
+                    <a href="/history">
+                        <button type="button" class="btn-secondary">
+                            📖 レシピ履歴を見る
+                        </button>
+                    </a>
+                </div>
+
+            </form>
+
+            <h3 class="upload-title">カメラ・レシートから登録</h3>
+            <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form">
+                <input type="file" name="image" accept="image/*" capture="environment" required>
+                <button type="submit">読み取って登録</button>
+            </form>
+
+        </div>
+
+        <div class="summary" id="summary">
+            <div class="stat">
+                <b id="count-all">0</b>
+                <span>登録中</span>
+            </div>
+            <div class="stat soon">
+                <b id="count-soon">0</b>
+                <span>3日以内</span>
+            </div>
+            <div class="stat expired">
+                <b id="count-expired">0</b>
+                <span>期限切れ</span>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <h2>登録済みの食材</h2>
+        </div>
+
+        <div class="toolbar">
+            <input type="search" id="search"
+                placeholder="食材名で検索" aria-label="食材名で検索">
+
+            <select id="sort" aria-label="並び順">
+                <option value="default">登録順</option>
+                <option value="asc">期限が近い順</option>
+                <option value="desc">期限が遠い順</option>
+            </select>
+        </div>
+
+        <div class="filters" id="filters">
+            <button type="button" class="chip active" data-filter="all">すべて</button>
+            <button type="button" class="chip" data-filter="soon">3日以内</button>
+            <button type="button" class="chip" data-filter="expired">期限切れ</button>
+        </div>
+
+        <div id="ingredient-list">
+
+            {% for ingredient in ingredients %}
+
+            <div class="ingredient"
+                data-expiry="{{ ingredient[4] }}"
+                data-name="{{ ingredient[1] }}">
+
+                <div class="ingredient-main">
+                    <h2>{{ ingredient[1] }}</h2>
+
+                    <p>
+                        数量：
+                        <span class="amount">{{ ingredient[2] }}{{ ingredient[3] }}</span>
+                    </p>
+
+                    <p>
+                        賞味期限：
+                        <span class="expiry" data-expiry="{{ ingredient[4] }}">
+                            {{ ingredient[4] }}
+                        </span>
+                    </p>
+                </div>
+
+                <form method="POST" action="/delete/{{ ingredient[0] }}" data-confirm="{{ ingredient[1] }}"
+                    data-unit="{{ ingredient[3] }}" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <input type="number" name="quantity" value="{{ [1, ingredient[2]] | min }}" min="0.01" step="any" max="{{ ingredient[2] }}"
+                        style="width: 60px;" aria-label="削除する数量" required>
+                    <span>{{ ingredient[3] }}</span>
+                    <button type="submit" class="delete-button">削除</button>
+                </form>
+
+            </div>
+
+            {% else %}
+
+            <div class="empty">
+                食材がまだありません。上のフォームから登録してください。
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="no-match" id="no-match">
+            条件に合う食材がありません。
+        </div>
+
+    </div>
+
+    <div class="loading" id="loading" role="status" aria-live="polite">
+        <div class="spinner"></div>
+        <div>AIがレシピを考えています…</div>
+    </div>
+
+    {% if not has_api_key %}
+    <div class="api-modal" id="api-modal">
+        <div class="api-modal-card" role="dialog" aria-modal="true"
+            aria-labelledby="api-modal-title">
+
+            <div class="api-modal-icon">🔑</div>
+            <h2 id="api-modal-title">Gemini APIキーを設定</h2>
+            <p>
+                レシピの提案やラベルの読み取りにはGemini APIキーが必要です。
+                入力したキーはこのアプリのサーバー内（api.txt）に保存されます。
+            </p>
+
+            <form action="/save_api_key" method="POST" id="api-key-form">
+                <label for="api-key-input">APIキー</label>
+
+                <div class="api-key-field">
+                    <input type="password" id="api-key-input" name="api_key"
+                        autocomplete="off" spellcheck="false"
+                        placeholder="AIza..." required>
+                    <button type="button" class="api-key-toggle" id="api-key-toggle"
+                        aria-label="APIキーの表示/非表示を切り替え">表示</button>
+                </div>
+
+                {% if api_key_error %}
+                <div class="api-modal-error" role="alert">
+                    APIキーが空です。キーを入力してください。
+                </div>
+                {% endif %}
+
+                <p class="api-modal-help">
+                    キーは
+                    <a href="https://aistudio.google.com/apikey" target="_blank"
+                        rel="noopener">Google AI Studio</a>
+                    で発行できます。
+                </p>
+
+                <div class="api-modal-actions">
+                    <button type="submit" class="api-save">キーを保存</button>
+                    <button type="button" class="api-later" id="api-later">
+                        あとで設定する
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var modal = document.getElementById("api-modal");
+            var input = document.getElementById("api-key-input");
+            var toggle = document.getElementById("api-key-toggle");
+            var later = document.getElementById("api-later");
+
+            toggle.addEventListener("click", function () {
+                var show = input.type === "password";
+                input.type = show ? "text" : "password";
+                toggle.textContent = show ? "隠す" : "表示";
+            });
+
+            function closeModal() {
+                modal.style.display = "none";
+                document.body.classList.remove("api-modal-open");
+            }
+
+            later.addEventListener("click", closeModal);
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") closeModal();
+            });
+
+            input.focus();
+        })();
+    </script>
+    {% endif %}
+
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var btn = document.getElementById("theme-toggle");
+
+            btn.addEventListener("click", function () {
+                var current = root.getAttribute("data-theme") ||
+                    (window.matchMedia("(prefers-color-scheme: dark)").matches
+                        ? "dark" : "light");
+
+                var next = current === "dark" ? "light" : "dark";
+                root.setAttribute("data-theme", next);
+
+                try {
+                    localStorage.setItem("theme", next);
+                } catch (e) { }
+            });
+        })();
+
+        function pad(n) {
+            return String(n).padStart(2, "0");
+        }
+
+        function toISO(d) {
+            return d.getFullYear() + "-" +
+                pad(d.getMonth() + 1) + "-" +
+                pad(d.getDate());
+        }
+
+        function daysLeft(iso) {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            var d = new Date(iso + "T00:00:00");
+            return isNaN(d) ? null :
+                Math.round((d - today) / 86400000);
+        }
+
+        document.querySelectorAll(".quick .chip").forEach(function (b) {
+            b.addEventListener("click", function () {
+                var d = new Date();
+                d.setDate(d.getDate() + Number(b.dataset.days));
+                document.getElementById("expiry_date").value = toISO(d);
+            });
+        });
+
+        var list = document.getElementById("ingredient-list");
+        var cards = Array.prototype.slice.call(
+            list.querySelectorAll(".ingredient")
+        );
+
+        var state = {
+            filter: "all",
+            sort: "default",
+            q: ""
+        };
+
+        cards.forEach(function (card, i) {
+            card.dataset.order = i;
+
+            var diff = daysLeft(card.dataset.expiry);
+            var status = "ok";
+            var text = null;
+
+            if (diff !== null) {
+                if (diff < 0) {
+                    status = "expired";
+                    text = "期限切れ";
+                } else if (diff <= 3) {
+                    status = "soon";
+                    text = diff === 0 ? "今日まで" : "あと" + diff + "日";
+                }
+            }
+
+            card.dataset.status = status;
+
+            if (text) {
+                var badge = document.createElement("span");
+                badge.className = "expiry-badge " + status;
+                badge.textContent = text;
+                card.querySelector(".expiry").after(badge);
+            }
+        });
+
+        function countBy(s) {
+            return cards.filter(function (c) {
+                return c.dataset.status === s;
+            }).length;
+        }
+
+        document.getElementById("count-all").textContent = cards.length;
+        document.getElementById("count-soon").textContent = countBy("soon");
+        document.getElementById("count-expired").textContent = countBy("expired");
+
+        if (!cards.length) {
+            document.getElementById("summary").style.display = "none";
+            document.querySelector(".toolbar").style.display = "none";
+            document.getElementById("filters").style.display = "none";
+        }
+
+        function render() {
+            var sorted = cards.slice().sort(function (a, b) {
+                if (state.sort === "default") {
+                    return a.dataset.order - b.dataset.order;
+                }
+
+                var r = a.dataset.expiry < b.dataset.expiry ? -1 :
+                    a.dataset.expiry > b.dataset.expiry ? 1 : 0;
+
+                return state.sort === "asc" ? r : -r;
+            });
+
+            var q = state.q.trim().toLowerCase();
+            var visible = 0;
+
+            sorted.forEach(function (c) {
+                var okFilter = state.filter === "all" ||
+                    c.dataset.status === state.filter;
+
+                var okQuery = !q ||
+                    c.dataset.name.toLowerCase().indexOf(q) !== -1;
+
+                c.style.display = okFilter && okQuery ? "" : "none";
+
+                if (okFilter && okQuery) visible++;
+                list.appendChild(c);
+            });
+
+            document.getElementById("no-match").style.display =
+                cards.length && !visible ? "block" : "none";
+        }
+
+        document.getElementById("search").addEventListener("input", function (e) {
+            state.q = e.target.value;
+            render();
+        });
+
+        document.getElementById("sort").addEventListener("change", function (e) {
+            state.sort = e.target.value;
+            render();
+        });
+
+        document.querySelectorAll("#filters .chip").forEach(function (b) {
+            b.addEventListener("click", function () {
+                state.filter = b.dataset.filter;
+
+                document.querySelectorAll("#filters .chip").forEach(function (x) {
+                    x.classList.toggle("active", x === b);
+                });
+
+                render();
+            });
+        });
+
+        document.querySelectorAll("form[data-confirm]").forEach(function (f) {
+            f.addEventListener("submit", function (e) {
+                var qtyInput = f.querySelector('input[name="quantity"]');
+                var qty = qtyInput ? qtyInput.value : "";
+                var unit = f.dataset.unit || "";
+                if (!confirm("「" + f.dataset.confirm + "」を " + (qty ? qty + unit + " " : "") + "削除しますか？")) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        document.querySelectorAll(".flash-close").forEach(function (b) {
+            b.addEventListener("click", function () { b.parentElement.remove(); });
+        });
+
+        document.querySelectorAll("form").forEach(function (f) {
+            f.addEventListener("submit", function (e) {
+                if (e.defaultPrevented) return;
+
+                var btns = f.querySelectorAll('button[type="submit"]');
+
+                setTimeout(function () {
+                    btns.forEach(function (b) {
+                        b.disabled = true;
+                    });
+                }, 0);
+            });
+        });
+
+        var loading = document.getElementById("loading");
+
+        document.querySelector('a[href="/recipe"]').addEventListener("click", function () {
+            loading.classList.add("show");
+        });
+
+        window.addEventListener("pageshow", function (e) {
+            if (e.persisted) {
+                loading.classList.remove("show");
+
+                document.querySelectorAll('button[type="submit"]').forEach(function (b) {
+                    b.disabled = false;
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>

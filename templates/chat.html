@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ character.name }}に相談</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem("theme");
+                if (theme) {
+                    document.documentElement.setAttribute("data-theme", theme);
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <style>
+        [hidden] {
+            display: none !important;
+        }
+
+        /* ---------- キャラクター表示 ---------- */
+        .chat-stage {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            margin-bottom: 14px;
+            padding: 8px 0;
+            background: var(--panel, var(--bg, #fff));
+            border-bottom: 1px solid var(--line);
+        }
+
+        .chat-face-wrap {
+            width: 100%;
+            height: clamp(120px, 24vh, 220px);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .chat-face-img {
+            display: block;
+            height: 100%;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .chat-face-note {
+            margin-bottom: 14px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 12px;
+            border: 1px dashed var(--line);
+            border-radius: 8px;
+            color: var(--ink-soft);
+            font-size: 0.78rem;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .chat-face-emoji {
+            font-size: clamp(3.5rem, 12vh, 6rem);
+            line-height: 1;
+            padding-bottom: 4px;
+        }
+
+        .chat-face-wrap.pop .chat-face-img,
+        .chat-face-wrap.pop .chat-face-emoji {
+            animation: chat-pop 0.35s ease;
+        }
+
+        @keyframes chat-pop {
+            0%   { transform: translateY(0) scale(1); }
+            40%  { transform: translateY(-8px) scale(1.04); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        .chat-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .chat-title {
+            color: var(--ink-soft);
+            font-size: 0.75rem;
+        }
+
+        /* ---------- 会話ログ ---------- */
+        .chat-log {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .chat-msg {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 92%;
+        }
+
+        .chat-msg.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .chat-msg.bot {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .chat-bubble {
+            padding: 10px 14px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .chat-msg.user .chat-bubble {
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-msg.bot .chat-bubble {
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-bubble.typing {
+            color: var(--ink-soft);
+        }
+
+        .chat-bubble.error {
+            color: var(--ink-soft);
+            border-style: dashed;
+        }
+
+        /* ---------- 料理の提案カード ---------- */
+        .chat-suggestions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .suggest-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .suggest-card.open {
+            border-color: currentColor;
+        }
+
+        .suggest-head,
+        .suggest-head:hover,
+        .suggest-head:active,
+        .suggest-head:focus {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 14px;
+            border: 0;
+            border-radius: 0;
+            background: none;
+            box-shadow: none;
+            transform: none;
+            filter: none;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .suggest-head:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: -4px;
+        }
+
+        .suggest-name {
+            display: block;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .suggest-summary {
+            display: block;
+            margin-top: 2px;
+            color: var(--ink-soft);
+            font-size: 0.85rem;
+        }
+
+        .suggest-chevron {
+            flex: none;
+            color: var(--ink-soft);
+            transition: transform 0.3s ease;
+        }
+
+        .suggest-card.open .suggest-chevron {
+            transform: rotate(180deg);
+        }
+
+        .suggest-body {
+            padding: 0 14px 14px;
+            border-top: 1px solid var(--line);
+        }
+
+        .suggest-status {
+            margin: 12px 0 0;
+            color: var(--ink-soft);
+            font-size: 0.9rem;
+        }
+
+        .suggest-detail {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            color: var(--ink-soft);
+            margin: 12px 0;
+        }
+
+        .suggest-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .suggest-actions button,
+        .suggest-actions a,
+        .suggest-actions a button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .suggest-rating {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--line);
+            text-align: center;
+        }
+
+        .suggest-rating-label {
+            margin: 0 0 6px;
+            font-size: 0.9rem;
+            color: var(--ink-soft);
+        }
+
+        .star-row {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .star-btn,
+        .star-btn:hover,
+        .star-btn:active,
+        .star-btn:focus {
+            width: auto;
+            padding: 2px 6px;
+            border: 0;
+            border-radius: 8px;
+            background: none;
+            box-shadow: none;
+            transform: none;
+            filter: none;
+            color: var(--ink-soft);
+            font-size: 2rem;
+            line-height: 1.2;
+            cursor: pointer;
+        }
+
+        .star-btn.on,
+        .star-btn.on:hover,
+        .star-btn.on:active,
+        .star-btn.on:focus {
+            color: #f5b301;
+        }
+
+        .star-btn:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+
+        .star-btn:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .suggest-done {
+            text-align: center;
+            color: var(--ok);
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin: 4px 0;
+        }
+
+        /* ---------- 入力欄 ---------- */
+        .chat-quick {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .chat-quick button {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 999px;
+        }
+
+        /* 質問を画面の上に揃えるための余白（高さはJavaScriptが調整する） */
+        #chat-spacer {
+            height: 0;
+        }
+
+        /* 入力欄は画面の下に固定して、会話が長くなっても常に打てるようにする */
+        .chat-bar {
+            position: sticky;
+            bottom: 0;
+            z-index: 20;
+            padding: 10px 0;
+            background: var(--panel, var(--bg, #fff));
+            border-top: 1px solid var(--line);
+        }
+
+        .chat-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .chat-form input[type="text"] {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-form button {
+            width: auto;
+            flex: none;
+        }
+
+        .page-actions {
+            margin-top: 24px;
+        }
+
+        .page-actions a {
+            display: block;
+            text-decoration: none;
+        }
+
+        .page-actions button {
+            width: 100%;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .chat-face-wrap.pop .chat-face-img,
+            .chat-face-wrap.pop .chat-face-emoji {
+                animation: none;
+            }
+
+            .suggest-chevron {
+                transition: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="topbar">
+            <h1>💬 {{ character.name }}に相談</h1>
+            <button type="button" class="theme-toggle" id="theme-toggle"
+                    aria-label="ライト/ダークモードを切り替え">🌓</button>
+        </div>
+
+        <div class="chat-stage">
+            <div class="chat-face-wrap" id="face-wrap">
+                <img class="chat-face-img" id="face-img" alt="{{ character.name }}">
+                <div class="chat-face-emoji" id="face-emoji" aria-hidden="true" hidden></div>
+            </div>
+            <div class="chat-name">{{ character.name }}</div>
+            <div class="chat-title">{{ character.title }}</div>
+        </div>
+
+        <div class="chat-face-note" id="face-note" hidden></div>
+
+        <div class="chat-log" id="chat-log" role="log" aria-live="polite"></div>
+
+        <div class="chat-quick" id="chat-quick">
+            <button type="button" class="btn-secondary">おすすめの料理は？</button>
+            <button type="button" class="btn-secondary">賞味期限が近い食材を使いたい</button>
+            <button type="button" class="btn-secondary">さっぱりしたものがいいな</button>
+            <button type="button" class="btn-secondary">時短で作りたい</button>
+        </div>
+
+        <div id="chat-spacer" aria-hidden="true"></div>
+
+        <div class="chat-bar" id="chat-bar">
+            <form class="chat-form" id="chat-form" autocomplete="off">
+                <input type="text" id="chat-input" maxlength="500"
+                       placeholder="{{ character.name }}に話しかける…"
+                       aria-label="メッセージ" required>
+                <button type="submit" id="chat-send">送信</button>
+            </form>
+        </div>
+
+        <div class="page-actions">
+            <a href="/">
+                <button type="button" class="btn-secondary">🥕 冷蔵庫に戻る</button>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var btn = document.getElementById("theme-toggle");
+
+            btn.addEventListener("click", function () {
+                var current = root.getAttribute("data-theme") ||
+                    (window.matchMedia("(prefers-color-scheme: dark)").matches
+                        ? "dark" : "light");
+
+                var next = current === "dark" ? "light" : "dark";
+                root.setAttribute("data-theme", next);
+
+                try {
+                    localStorage.setItem("theme", next);
+                } catch (e) {}
+            });
+        })();
+
+        (function () {
+            // ---------- サーバーから受け取る設定 ----------
+            var CHARACTER_ID = {{ character.id | tojson }};
+            var CHARACTER_NAME = {{ character.name | tojson }};
+            var GREETING = {{ character.greeting | tojson }};
+            var EXPRESSIONS = {{ character.expressions | tojson }};
+            var IMAGES = {{ images | tojson }};
+            var IMAGE_FOLDER = {{ image_folder | tojson }};
+            var FOUND_FILES = {{ found_files | tojson }};
+
+            var CHAT_URL = {{ url_for('chat_message') | tojson }};
+            var DETAIL_URL = {{ url_for('recipe_detail') | tojson }};
+            var SAVE_URL = {{ url_for('save_recipe') | tojson }};
+            var USE_URL = "/use";
+            // 「/feedback/0」の末尾の 0 をレシピIDに置き換えて使う
+            var FEEDBACK_URL_TEMPLATE = {{ url_for('feedback', recipe_id=0) | tojson }};
+
+            // 画像が無いときの代わりの絵文字
+            var EMOJI = {
+                normal: "😊", happy: "😆", thinking: "🤔",
+                surprised: "😲", troubled: "😢"
+            };
+
+            var MAX_HISTORY = 20;
+
+            var log = document.getElementById("chat-log");
+            var form = document.getElementById("chat-form");
+            var input = document.getElementById("chat-input");
+            var sendBtn = document.getElementById("chat-send");
+            var quick = document.getElementById("chat-quick");
+
+            var stage = document.querySelector(".chat-stage");
+            var bar = document.getElementById("chat-bar");
+            var spacer = document.getElementById("chat-spacer");
+
+            var faceWrap = document.getElementById("face-wrap");
+            var faceImg = document.getElementById("face-img");
+            var faceEmoji = document.getElementById("face-emoji");
+            var faceNote = document.getElementById("face-note");
+
+            // 会話履歴（サーバーへ送る用）。ページを開き直すとリセットされます。
+            var history = [];
+            var sending = false;
+
+            // ---------- 表情の切り替え ----------
+            var imageUsable = true;
+            var currentExpression = "normal";
+
+            function showEmoji() {
+                imageUsable = false;
+                faceImg.hidden = true;
+                faceEmoji.hidden = false;
+                faceEmoji.textContent = EMOJI[currentExpression] || "😊";
+
+                // 画像が出ない原因を調べるための表示（画像が読み込めたら出ません）
+                faceNote.textContent =
+                    "※ 画像を読み込めないため、絵文字で表示しています。\n" +
+                    "探したURL：" + (IMAGES.normal || "") + "\n" +
+                    "サーバーが見ているフォルダ：" + IMAGE_FOLDER + "\n" +
+                    "そのフォルダ内のファイル：" + (FOUND_FILES.length ? FOUND_FILES.join("、") : "（無い、または空）");
+                faceNote.hidden = false;
+            }
+
+            faceImg.addEventListener("error", function () {
+                // 表情画像が無ければ normal に、normal も無ければ絵文字にする
+                if (faceImg.dataset.fallback !== "1" && currentExpression !== "normal" && IMAGES.normal) {
+                    faceImg.dataset.fallback = "1";
+                    faceImg.src = IMAGES.normal;
+                } else {
+                    showEmoji();
+                }
+            });
+
+            function setExpression(name) {
+                if (EXPRESSIONS.indexOf(name) === -1) name = "normal";
+                currentExpression = name;
+
+                faceWrap.classList.remove("pop");
+                void faceWrap.offsetWidth;
+                faceWrap.classList.add("pop");
+
+                if (!imageUsable) {
+                    faceEmoji.textContent = EMOJI[name] || "😊";
+                    return;
+                }
+
+                faceImg.dataset.fallback = "";
+                faceImg.src = IMAGES[name] || IMAGES.normal;
+            }
+
+            // ---------- 会話の表示 ----------
+            // 最後に送った質問。この質問が画面の上（キャラの下）に来るように揃える
+            var anchor = null;
+
+            function stickyTop() {
+                return stage.getBoundingClientRect().height + 8;
+            }
+
+            function anchorTop() {
+                return anchor.getBoundingClientRect().top + window.scrollY;
+            }
+
+            // 質問から下の内容が画面より短くても上に揃えられるよう、下に余白を足す
+            function updateSpacer() {
+                if (!anchor) {
+                    spacer.style.height = "0px";
+                    return;
+                }
+
+                var logBottom = log.getBoundingClientRect().bottom + window.scrollY;
+                var below = logBottom - anchorTop();
+                var visible = window.innerHeight - stickyTop() - bar.offsetHeight;
+
+                spacer.style.height = Math.max(0, visible - below) + "px";
+            }
+
+            function scrollToAnchor() {
+                if (!anchor) return;
+                updateSpacer();
+                window.scrollTo({ top: anchorTop() - stickyTop(), behavior: "smooth" });
+            }
+
+            // 返事や提案カードが増えたり開いたりして高さが変わったら、余白を調整し直す
+            if (window.ResizeObserver) {
+                new ResizeObserver(updateSpacer).observe(log);
+            }
+            window.addEventListener("resize", updateSpacer);
+
+            function addMessage(role, text, extraClass) {
+                var msg = document.createElement("div");
+                msg.className = "chat-msg " + role;
+
+                var bubble = document.createElement("div");
+                bubble.className = "chat-bubble" + (extraClass ? " " + extraClass : "");
+                bubble.textContent = text;
+
+                msg.appendChild(bubble);
+                log.appendChild(msg);
+
+                return { msg: msg, bubble: bubble };
+            }
+
+            function pushHistory(role, text) {
+                history.push({ role: role, text: text });
+                if (history.length > MAX_HISTORY) {
+                    history = history.slice(history.length - MAX_HISTORY);
+                }
+            }
+
+            // ---------- 料理の提案カード ----------
+            // 材料行の抽出（history.html と同じ。分数・帯分数に対応）
+            var VULGAR = { "½": " 1/2", "⅓": " 1/3", "⅔": " 2/3", "¼": " 1/4", "¾": " 3/4" };
+
+            function normalizeLine(line) {
+                Object.keys(VULGAR).forEach(function (k) {
+                    line = line.split(k).join(VULGAR[k]);
+                });
+                return line.normalize("NFKC").replace(/\u2044/g, "/");
+            }
+
+            var ING_RE = /^[\s*\->・]*([^\d：:\s]+)[\s：:]*(\d+(?:\.\d+)?(?:\s*(?:と|\+|\s)\s*\d+\s*\/\s*\d+|\s*\/\s*\d+)?)\s*([^\d\s]*)/;
+
+            function buildUseFormData(detailText) {
+                var formData = new FormData();
+                var count = 0;
+                var inIngredients = false;
+
+                detailText.split("\n").forEach(function (rawLine) {
+                    var line = normalizeLine(rawLine);
+
+                    if (line.indexOf("材料") !== -1) {
+                        inIngredients = true;
+                        return;
+                    }
+                    if (line.indexOf("作り方") !== -1) {
+                        inIngredients = false;
+                        return;
+                    }
+
+                    if (inIngredients) {
+                        var m = line.match(ING_RE);
+                        if (m) {
+                            formData.append("name", m[1].trim());
+                            formData.append("quantity", m[2].trim());
+                            formData.append("unit", m[3].trim() || "個");
+                            count++;
+                        }
+                    }
+                });
+
+                return { formData: formData, count: count };
+            }
+
+            function makeButton(label, className) {
+                var b = document.createElement("button");
+                b.type = "button";
+                if (className) b.className = className;
+                b.textContent = label;
+                return b;
+            }
+
+            function createSuggestCard(suggestion) {
+                var card = document.createElement("div");
+                card.className = "suggest-card";
+
+                var head = document.createElement("button");
+                head.type = "button";
+                head.className = "suggest-head";
+                head.setAttribute("aria-expanded", "false");
+
+                var main = document.createElement("span");
+                var nameEl = document.createElement("span");
+                nameEl.className = "suggest-name";
+                nameEl.textContent = suggestion.name;
+                var summaryEl = document.createElement("span");
+                summaryEl.className = "suggest-summary";
+                summaryEl.textContent = suggestion.summary || "";
+                main.appendChild(nameEl);
+                main.appendChild(summaryEl);
+
+                var chevron = document.createElement("span");
+                chevron.className = "suggest-chevron";
+                chevron.setAttribute("aria-hidden", "true");
+                chevron.textContent = "▼";
+
+                head.appendChild(main);
+                head.appendChild(chevron);
+
+                var body = document.createElement("div");
+                body.className = "suggest-body";
+                body.hidden = true;
+
+                var status = document.createElement("p");
+                status.className = "suggest-status";
+                status.hidden = true;
+
+                var retry = makeButton("🔄 もう一度取得する", "btn-secondary");
+                retry.hidden = true;
+
+                var detailEl = document.createElement("div");
+                detailEl.className = "suggest-detail";
+                detailEl.hidden = true;
+
+                var actions = document.createElement("div");
+                actions.className = "suggest-actions";
+                actions.hidden = true;
+
+                var saveBtn = makeButton("📖 履歴に保存する");
+                var useBtn = makeButton("🍽️ 作った！（食材を使う）", "btn-secondary");
+                // 文字だけのリンクだと押しにくいので、他の画面と同じ「リンク＋ボタン」にする
+                var historyLink = document.createElement("a");
+                historyLink.appendChild(makeButton("📖 履歴で見る", "btn-secondary"));
+                historyLink.hidden = true;
+                var done = document.createElement("p");
+                done.className = "suggest-done";
+                done.hidden = true;
+
+                actions.appendChild(saveBtn);
+                actions.appendChild(useBtn);
+                actions.appendChild(historyLink);
+                actions.appendChild(done);
+
+                // ---- 星評価（「作った！」を押したあとに表示） ----
+                var ratingBox = document.createElement("div");
+                ratingBox.className = "suggest-rating";
+                ratingBox.hidden = true;
+
+                var ratingLabel = document.createElement("p");
+                ratingLabel.className = "suggest-rating-label";
+
+                var starRow = document.createElement("div");
+                starRow.className = "star-row";
+
+                var stars = [];
+                for (var n = 1; n <= 5; n++) {
+                    (function (value) {
+                        var star = document.createElement("button");
+                        star.type = "button";
+                        star.className = "star-btn";
+                        star.setAttribute("aria-label", value + "点");
+                        star.textContent = "☆";
+                        star.addEventListener("click", function () { submitRating(value); });
+                        stars.push(star);
+                        starRow.appendChild(star);
+                    })(n);
+                }
+
+                ratingBox.appendChild(ratingLabel);
+                ratingBox.appendChild(starRow);
+
+                body.appendChild(status);
+                body.appendChild(retry);
+                body.appendChild(detailEl);
+                body.appendChild(actions);
+                body.appendChild(ratingBox);
+
+                card.appendChild(head);
+                card.appendChild(body);
+
+                var state = "";          // "", "loading", "done"
+                var recipeText = "";
+                var detailText = "";
+                var saved = false;
+                var used = false;
+                var recipeId = null;
+                var rated = false;
+
+                function paintStars(count) {
+                    stars.forEach(function (star, i) {
+                        star.textContent = i < count ? "★" : "☆";
+                        star.classList.toggle("on", i < count);
+                    });
+                }
+
+                function showRating() {
+                    ratingLabel.textContent = "おいしくできた？ 星で評価してね";
+                    ratingBox.hidden = false;
+                }
+
+                function submitRating(value) {
+                    if (!recipeId) return;
+
+                    stars.forEach(function (s) { s.disabled = true; });
+
+                    var fd = new FormData();
+                    fd.append("rating", value);
+
+                    fetch(FEEDBACK_URL_TEMPLATE.replace(/0$/, String(recipeId)), {
+                        method: "POST",
+                        headers: { "X-Requested-With": "fetch" },
+                        body: fd
+                    })
+                        .then(function (res) {
+                            if (!res.ok) throw new Error("rating failed");
+
+                            paintStars(value);
+                            ratingLabel.textContent =
+                                "評価：" + "⭐".repeat(value) + "（押し直すと変更できます）";
+
+                            if (!rated) {
+                                rated = true;
+                                if (value >= 4) {
+                                    addMessage("bot", "やったあっ！評価ありがとう。次の提案の参考にするねっ。");
+                                    setExpression("happy");
+                                } else if (value === 3) {
+                                    addMessage("bot", "評価ありがとう！次はもっとあなた好みの料理を探すねっ。");
+                                    setExpression("normal");
+                                } else {
+                                    addMessage("bot", "教えてくれてありがとう…。次はもっとあなた好みの料理を考えるねっ。");
+                                    setExpression("troubled");
+                                }
+                            }
+                        })
+                        .catch(function () {
+                            alert("評価の保存に失敗しました。");
+                        })
+                        .then(function () {
+                            stars.forEach(function (s) { s.disabled = false; });
+                        });
+                }
+
+                function setOpen(open) {
+                    card.classList.toggle("open", open);
+                    head.setAttribute("aria-expanded", open ? "true" : "false");
+                    body.hidden = !open;
+                }
+
+                function showStatus(text, showRetry) {
+                    status.textContent = text;
+                    status.hidden = !text;
+                    retry.hidden = !showRetry;
+                }
+
+                function loadDetail() {
+                    if (state === "loading" || state === "done") return;
+
+                    state = "loading";
+                    showStatus("作り方を考えてるよ…", false);
+
+                    fetch(DETAIL_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name: suggestion.name, persona: CHARACTER_ID })
+                    })
+                        .then(function (res) {
+                            return res.json().then(function (data) {
+                                return { ok: res.ok, data: data };
+                            });
+                        })
+                        .then(function (result) {
+                            if (!result.ok || !result.data.detail) {
+                                state = "";
+                                showStatus(result.data.error || "取得に失敗しました。", true);
+                                return;
+                            }
+
+                            detailText = result.data.detail;
+                            recipeText = result.data.recipe_text;
+                            detailEl.textContent = detailText;
+                            detailEl.hidden = false;
+                            actions.hidden = false;
+                            showStatus("", false);
+                            state = "done";
+                            setExpression("happy");
+                        })
+                        .catch(function () {
+                            state = "";
+                            showStatus("通信に失敗しました。もう一度お試しください。", true);
+                        });
+                }
+
+                // 履歴に保存（成功すると Promise が解決）
+                function saveRecipe() {
+                    if (saved) return Promise.resolve();
+
+                    var fd = new FormData();
+                    fd.append("recipe_text", recipeText);
+
+                    return fetch(SAVE_URL, {
+                        method: "POST",
+                        headers: { "X-Requested-With": "fetch" },
+                        body: fd
+                    })
+                        .then(function (res) {
+                            if (!res.ok) throw new Error("save failed");
+                            return res.json();
+                        })
+                        .then(function (data) {
+                            saved = true;
+                            recipeId = data.id;
+                            saveBtn.hidden = true;
+                            historyLink.href = data.url;
+                            historyLink.hidden = false;
+                            done.textContent = "✅ 履歴に保存しました（評価は履歴画面からできます）";
+                            done.hidden = false;
+                        });
+                }
+
+                head.addEventListener("click", function () {
+                    var willOpen = !card.classList.contains("open");
+                    setOpen(willOpen);
+                    if (willOpen) loadDetail();
+                });
+
+                retry.addEventListener("click", loadDetail);
+
+                saveBtn.addEventListener("click", function () {
+                    saveBtn.disabled = true;
+                    saveRecipe().catch(function () {
+                        saveBtn.disabled = false;
+                        alert("履歴への保存に失敗しました。");
+                    });
+                });
+
+                useBtn.addEventListener("click", function () {
+                    if (used) return;
+
+                    var parsed = buildUseFormData(detailText);
+
+                    if (parsed.count === 0) {
+                        alert("材料を読み取れなかったため、冷蔵庫の食材は減らせませんでした。");
+                        return;
+                    }
+
+                    if (!confirm("この料理で使った食材を冷蔵庫から減らしますか？")) return;
+
+                    useBtn.disabled = true;
+
+                    fetch(USE_URL, {
+                        method: "POST",
+                        headers: { "X-Requested-With": "fetch" },
+                        body: parsed.formData
+                    })
+                        .then(function (res) {
+                            if (!res.ok) throw new Error("use failed");
+                            used = true;
+                            useBtn.hidden = true;
+
+                            // まだ保存していなければ、評価できるよう履歴にも保存する
+                            return saveRecipe().catch(function () {});
+                        })
+                        .then(function () {
+                            if (recipeId) {
+                                showRating();
+                                addMessage("bot", "おつかれさまっ！食材さんたちは冷蔵庫から減らしておいたよ。おいしくできたかな？ 星で教えてね。");
+                                ratingBox.scrollIntoView({ behavior: "smooth", block: "center" });
+                            } else {
+                                addMessage("bot", "おつかれさまっ！食材さんたちは冷蔵庫から減らしておいたよ。（履歴に保存できなかったから、評価はできなかったんだ…）");
+                            }
+                            setExpression("happy");
+                        })
+                        .catch(function () {
+                            useBtn.disabled = false;
+                            alert("食材の更新に失敗しました。");
+                        });
+                });
+
+                return card;
+            }
+
+            // ---------- 送信処理 ----------
+            function setSending(value) {
+                sending = value;
+                sendBtn.disabled = value;
+                input.disabled = value;
+                quick.querySelectorAll("button").forEach(function (b) { b.disabled = value; });
+            }
+
+            function sendMessage(text) {
+                text = (text || "").trim();
+                if (!text || sending) return;
+
+                setSending(true);
+                var userMsg = addMessage("user", text);
+                input.value = "";
+
+                // 最初の質問を送ったら、おすすめの質問ボタンは隠す
+                quick.hidden = true;
+
+                var typing = addMessage("bot", "…", "typing");
+                setExpression("thinking");
+
+                // 自分の質問が画面の一番上に来るようにスクロールする
+                anchor = userMsg.msg;
+                scrollToAnchor();
+
+                fetch(CHAT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text, history: history })
+                })
+                    .then(function (res) {
+                        return res.json().then(function (data) {
+                            return { ok: res.ok, data: data };
+                        });
+                    })
+                    .then(function (result) {
+                        if (!result.ok || !result.data.reply) {
+                            throw new Error(result.data.error || "failed");
+                        }
+
+                        var data = result.data;
+
+                        typing.bubble.textContent = data.reply;
+                        typing.bubble.classList.remove("typing");
+
+                        var suggestions = data.suggestions || [];
+
+                        if (suggestions.length) {
+                            var list = document.createElement("div");
+                            list.className = "chat-suggestions";
+                            suggestions.forEach(function (s) {
+                                list.appendChild(createSuggestCard(s));
+                            });
+                            typing.msg.appendChild(list);
+                        }
+
+                        // サーバーには、提案した料理名も含めて会話を渡す
+                        var botText = data.reply;
+                        if (suggestions.length) {
+                            botText += "［提案した料理：" +
+                                suggestions.map(function (s) { return s.name; }).join("、") + "］";
+                        }
+                        pushHistory("user", text);
+                        pushHistory("model", botText);
+
+                        setExpression(data.expression);
+                    })
+                    .catch(function (err) {
+                        typing.bubble.textContent = (err && err.message && err.message !== "failed")
+                            ? err.message
+                            : "うまく返事できなかったよ…もう一度送ってみてね。";
+                        typing.bubble.classList.remove("typing");
+                        typing.bubble.classList.add("error");
+                        setExpression("troubled");
+                    })
+                    .then(function () {
+                        setSending(false);
+                        input.focus();
+                    });
+            }
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                sendMessage(input.value);
+            });
+
+            quick.querySelectorAll("button").forEach(function (b) {
+                b.addEventListener("click", function () {
+                    sendMessage(b.textContent);
+                });
+            });
+
+            // ---------- 初期表示 ----------
+            setExpression("normal");
+            addMessage("bot", GREETING);
+        })();
+    </script>
+</body>
+</html>
