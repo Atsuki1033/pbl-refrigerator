@@ -1,7 +1,7 @@
 import os
 import re
 import sqlite3
-
+from werkzeug.security import generate_password_hash, check_password_hash
 # データベースファイルは database.py と同じフォルダに作る
 # （どのフォルダからアプリを起動しても、同じ PBL.db を使うため）
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "PBL.db")
@@ -77,7 +77,59 @@ def _connect():
         init_db()
 
     return sqlite3.connect(DB_PATH)
+# ---------------------------------------------------------------
+# ユーザー・アカウントに関する操作
+# ---------------------------------------------------------------
 
+def create_user(user_id, password):
+    """新しいユーザーを登録する"""
+
+    conn = _connect()
+    cursor = conn.cursor()
+
+    try:
+        password_hash = generate_password_hash(password)
+
+        cursor.execute("""
+            INSERT INTO users (user_id, password_hash)
+            VALUES (?, ?)
+        """, (user_id, password_hash))
+
+        conn.commit()
+        return True
+
+    except sqlite3.IntegrityError:
+        # すでに同じユーザーIDが存在する場合
+        return False
+
+    finally:
+        conn.close()
+
+
+def verify_user(user_id, password):
+    """ユーザーIDとパスワードを照合する"""
+
+    conn = _connect()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT password_hash
+            FROM users
+            WHERE user_id = ?
+        """, (user_id,))
+
+        result = cursor.fetchone()
+
+        if result is None:
+            return False
+
+        password_hash = result[0]
+
+        return check_password_hash(password_hash, password)
+
+    finally:
+        conn.close()
 
 # ---------------------------------------------------------------
 # 食材に関する操作
