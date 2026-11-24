@@ -9,6 +9,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "PBL.db")
 # アプリが使うテーブルの定義（PBL_scheme.sql と同じ内容）。
 # CREATE TABLE IF NOT EXISTS なので、すでにあるテーブルやデータは変更されない。
 SCHEMA = """
+
 CREATE TABLE IF NOT EXISTS ingredients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -41,6 +42,11 @@ CREATE TABLE IF NOT EXISTS shopping_list (
     quantity TEXT DEFAULT '',
     is_checked INTEGER DEFAULT 0,
     created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
 
