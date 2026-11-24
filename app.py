@@ -4,7 +4,7 @@ import re
 import unicodedata
 from datetime import date, datetime, timedelta
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 
 from gemini import (
     get_recipe_suggestions,
