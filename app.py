@@ -17,6 +17,8 @@ from gemini import (
 )
 from database import (
     create_tables,
+    create_user,
+    verify_user,
     get_ingredients,
     add_ingredient,
     delete_ingredient,
