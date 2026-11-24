@@ -23,3 +23,8 @@ CREATE TABLE IF NOT EXISTS recipe_feedback (
     FOREIGN KEY (recipe_id)
         REFERENCES recipes(id)
 );
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
