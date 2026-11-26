@@ -181,7 +181,66 @@ def keep_scroll_position(response):
     return response
 
 create_tables()
+# ---------------------------------------------------------------
+# アカウント・ログイン機能
+# ---------------------------------------------------------------
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+        user_id = request.form.get("user_id", "").strip()
+        password = request.form.get("password", "")
+
+        if not user_id or not password:
+            flash("ユーザーIDとパスワードを入力してください。", "error")
+            return redirect(url_for("register"))
+
+        if len(user_id) < 3 or len(user_id) > 30:
+            flash("ユーザーIDは3〜30文字にしてください。", "error")
+            return redirect(url_for("register"))
+
+        if len(password) < 8:
+            flash("パスワードは8文字以上にしてください。", "error")
+            return redirect(url_for("register"))
+
+        if create_user(user_id, password):
+            flash("アカウントを作成しました。ログインしてください。", "success")
+            return redirect(url_for("login"))
+
+        flash("そのユーザーIDはすでに使用されています。", "error")
+        return redirect(url_for("register"))
+
+    return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+        user_id = request.form.get("user_id", "").strip()
+        password = request.form.get("password", "")
+
+        if verify_user(user_id, password):
+            session.clear()
+            session["user_id"] = user_id
+
+            return redirect(url_for("index"))
+
+        flash("ユーザーIDまたはパスワードが違います。", "error")
+        return redirect(url_for("login"))
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    flash("ログアウトしました。", "success")
+
+    return redirect(url_for("login"))
 NOT_FOOD_MSG = "食品ではないようです。食材のラベルやレシートを撮影してください。"
 UNREADABLE_MSG = "画像から食材情報を読み取れませんでした。明るい場所で、文字がはっきり写るように撮り直してください。"
 
